@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="cache-control" content="no-cache" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="-1" />
+
+	<base target="_blank">
+	<script>this.cai-webchat.clearMessages();</script>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=0.86, maximum-scale=3.0, minimum-scale=0.86">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/bootstrap-4.3.1-dist/css/bootstrap.min.css') }}" \
+	integrity="" \
+	crossorigin="anonymous">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/custom/sticky-footer-navbar.css') }}" >
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/jquery-3.1.1-dist.js') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/vendor/bootstrap-4.3.1-dist/js/bootstrap.min.js') }}" \
+	integrity="" \
+	crossorigin="anonymous">
+
+	<title>RT Chatbot</title>
+</head>
+<body>
+	<script src="https://cdn.cai.tools.sap/webchat/webchat.js"
+	channelId="d120dbfa-59ff-4000-b907-55710c0d5899"
+	token="b908ef8a03805fd952081a5cfe83ce3b" id="cai-webchat">
+	</script>
+	<div class="container">
+		<div class="row">
+			<h1>Rotten Tomatoes Chatbot</h1>
+			<p>Give me a movie name and I will tell you its Rotten Tomatoes rating. <br>
+			The chatbot has been implemented using the <a href="https://cai.tools.sap/">
+			SAP Conversational AI</a> platform and the Python Flask web framework. <br>
+			The Flask application is <a href="https://github.com/raoulbia/bot-telco">hosted on github</a>.
+			The chatbot interface is hosted on an AWS EC2 t2.micro instance.</p>
+		</div>
+	</div>
+</body>
+</html>
