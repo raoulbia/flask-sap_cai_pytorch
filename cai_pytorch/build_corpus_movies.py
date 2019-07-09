@@ -182,7 +182,7 @@ def filterPairs(pairs):
 
 
 # Using the functions defined above, return a populated voc object and pairs list
-def loadPrepareData(datafile, save_dir):
+def loadPrepareData(datafile):
     print("Start preparing training data ...")
     voc, pairs = readVocs(datafile)
     print("Read {!s} sentence pairs".format(len(pairs)))
@@ -227,8 +227,10 @@ def trimRareWords(voc, pairs, MIN_COUNT):
 
 def build_corpus_movies(movie_lines, movie_conversations):
     # Define path to new file
-    datafile = temp_dir + '/cornell movie-dialogs corpus/formatted_movie_lines.txt'
-    save_dir = 'static/'
+    directory = 'static/cornell movie-dialogs corpus'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    datafile = os.path.join(directory, 'formatted_movie_lines.txt')
 
     delimiter = '\t'
     # Unescape the delimiter
@@ -258,7 +260,7 @@ def build_corpus_movies(movie_lines, movie_conversations):
     printLines(datafile)
 
     # Load/Assemble voc and pairs
-    voc, pairs = loadPrepareData(datafile, save_dir)
+    voc, pairs = loadPrepareData(datafile)
     
     # Print some pairs to validate
     print("\npairs:")
