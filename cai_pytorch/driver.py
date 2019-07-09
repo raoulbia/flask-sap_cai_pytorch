@@ -39,7 +39,5 @@ searcher = GreedySearchDecoder(encoder, decoder)
 evaluateInput(encoder, decoder, searcher, voc)
 
 
-if __name__ == "__main__":
-    
 
     
