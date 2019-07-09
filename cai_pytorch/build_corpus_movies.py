@@ -227,7 +227,7 @@ def trimRareWords(voc, pairs, MIN_COUNT):
 
 def build_corpus_movies(movie_lines, movie_conversations):
     # Define path to new file
-    directory = 'static/cornell movie-dialogs corpus'
+    directory = 'static/local-data/cornell movie-dialogs corpus'
     if not os.path.exists(directory):
         os.makedirs(directory)
     datafile = os.path.join(directory, 'formatted_movie_lines.txt')
