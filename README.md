@@ -13,6 +13,7 @@ Some Notes:
 * based on the above, the Flask component of this project is on hold for now. 
 * the building blocks for developing a working Flask application are in place though. Specifically, 
 the script `utils_load_model.py` should be called by `app.py`. 
+* the true challenge of the tutorial is understanding the neural network aspect of the implementaton...
  
 
  
