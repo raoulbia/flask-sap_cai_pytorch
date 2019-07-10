@@ -176,7 +176,7 @@ class Model():
 
             # Save checkpoint
             if (iteration % self.pp.save_every == 0):
-                directory = os.path.join('static/', self.pp.model_name, self.pp.corpus_name,
+                directory = os.path.join('static/local-data/', self.pp.corpus_name, self.pp.model_name,
                                          '{}-{}_{}'.format(self.pp.encoder_n_layers,
                                                            self.pp.decoder_n_layers,
                                                            self.pp.hidden_size))
@@ -291,6 +291,25 @@ class Model():
 
             except KeyError:
                 print("Error: Encountered unknown word.")
+
+    def evaluateInputSapCai(self, input, searcher, voc):
+        input_sentence = input
+        while (1):
+            try:
+
+                # Check if it is quit case
+                if input_sentence == 'q' or input_sentence == 'quit': break
+                # Normalize sentence
+                input_sentence = normalizeString(input_sentence)
+                # Evaluate sentence
+                output_words = self.evaluate(searcher, voc, input_sentence)
+                # Format and print response sentence
+                output_words[:] = [x for x in output_words if not (x == 'EOS' or x == 'PAD')]
+                return output_words
+
+            except KeyError:
+                return "Error: Encountered unknown word."
+
 
 def indexesFromSentence(sentence, voc, EOS_token):
     return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]

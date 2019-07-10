@@ -20,7 +20,7 @@ class ProjectParams():
         self.batch_size = 64
         self.device = torch.device("cpu")
 
-        self.loadFilename = 'static/4000_checkpoint.tar'
+        self.loadFilename = 'static/local-data/cornell movie-dialogs corpus/cb_model/2-2_500/10000_checkpoint.tar'
 
         # Configure training/optimization
         self.clip = 50.0
@@ -58,12 +58,12 @@ if __name__ == "__main__":
     pp = ProjectParams()
 
     # build model
-    voc, pairs = BuildCorpus(pp).build_corpus_movies()
-    encoder, decoder = Model(pp).train_model(voc, pairs)
+    # voc, pairs = BuildCorpus(pp).build_corpus_movies()
+    # encoder, decoder = Model(pp).train_model(voc, pairs)
 
 
     # load pre-trained model
-    # encoder, decoder, voc = LoadModel(pp).load_model()
+    encoder, decoder, voc = LoadModel(pp).load_model()
 
 
     # Initialize search module

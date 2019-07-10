@@ -2,28 +2,37 @@
 
 from flask import Flask, request, jsonify, render_template
 import json, requests, os
+from pytorch import ProjectParams
+from utils_load_model import LoadModel
+from search import GreedySearchDecoder
+from build_model import Model
+
+
+class TalkControl:
+    def __init__(self):
+        self.app = Flask(__name__, static_url_path='/static')
+        self.pp = ProjectParams()
+        self.encoder, self.decoder, self.voc = LoadModel(self.pp).load_model()
+        self.searcher = GreedySearchDecoder(self.encoder, self.decoder, self.pp)
+
 
 app = Flask(__name__, static_url_path='/static')
-
+tc = TalkControl()
 
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html') # use methods = GET
 
 
-@app.route('/search', methods=['POST'])
-def search():
-
-    answer = 'Roger that'
-
+@app.route('/talk', methods=['POST'])
+def talk():
     data = json.loads(request.get_data().decode())
-    print(data)
-
-    r = requests.get("https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD,EUR")
-    r = r.json()
-    print(r.keys())
-
+    input = data['nlp']['source']
+    # print(input)
+    answer = Model(tc.pp).evaluateInputSapCai(input, tc.searcher, tc.voc)
+    answer = ' '.join(answer)
     return respond(answer)
+
 
 def respond(answer):
     return jsonify(
