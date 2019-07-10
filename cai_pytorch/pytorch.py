@@ -1,8 +1,8 @@
 import torch
-from build_corpus import BuildCorpus
-from build_model import Model
-from search import GreedySearchDecoder
-from utils_load_model import LoadModel
+from .build_corpus import BuildCorpus
+from .build_model import Model
+from .search import GreedySearchDecoder
+from .utils_load_model import LoadModel
 
 class ProjectParams():
     def __init__(self):

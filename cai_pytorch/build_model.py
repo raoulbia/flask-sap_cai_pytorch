@@ -6,9 +6,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from torch import optim
-from build_corpus import *
-from models import *
-from build_corpus import normalizeString
+from .build_corpus import *
+from .models import *
+from .build_corpus import normalizeString
 import torch.nn as nn
 import random
 import itertools

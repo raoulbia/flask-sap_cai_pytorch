@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 # import torch.utils.model_zoo
-from models import EncoderRNN, LuongAttnDecoderRNN
-from build_corpus import Voc
+from .models import EncoderRNN, LuongAttnDecoderRNN
+from .build_corpus import Voc
 
 
 

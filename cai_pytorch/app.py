@@ -2,10 +2,10 @@
 
 from flask import Flask, request, jsonify, render_template
 import json, requests, os
-from pytorch import ProjectParams
-from utils_load_model import LoadModel
-from search import GreedySearchDecoder
-from build_model import Model
+from .pytorch import ProjectParams
+from .utils_load_model import LoadModel
+from .search import GreedySearchDecoder
+from .build_model import Model
 
 
 class TalkControl:
