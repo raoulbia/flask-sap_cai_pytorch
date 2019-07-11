@@ -20,7 +20,7 @@ class ProjectParams():
         self.batch_size = 64
         self.device = torch.device("cpu")
 
-        self.loadFilename = 'static/local-data/cornell movie-dialogs corpus/cb_model/2-2_500/10000_checkpoint.tar'
+        self.loadFilename = '/home/ubuntu/cai_pytorch/cai_pytorch/static/10000_checkpoint.tar'
 
         # Configure training/optimization
         self.clip = 50.0

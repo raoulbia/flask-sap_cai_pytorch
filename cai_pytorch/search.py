@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from build_model import Model
+from .build_model import Model
 
 ######################################################################
     # Define Evaluation

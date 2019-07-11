@@ -2,3 +2,4 @@
 Pipfile
 *.tar
 local-data/
+myenv/
