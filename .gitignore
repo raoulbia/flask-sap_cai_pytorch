@@ -3,3 +3,4 @@ Pipfile
 *.tar
 local-data/
 myenv/
+__pycache__/
