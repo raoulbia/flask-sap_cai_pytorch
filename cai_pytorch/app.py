@@ -10,11 +10,10 @@ from .build_model import Model
 
 class TalkControl:
     def __init__(self):
-        self.app = Flask(__name__, static_url_path='/static')
         self.pp = ProjectParams()
         self.encoder, self.decoder, self.voc = LoadModel(self.pp).load_model()
         self.searcher = GreedySearchDecoder(self.encoder, self.decoder, self.pp)
-
+tc = TalkControl()
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -52,7 +51,6 @@ def errors():
 
 
 if __name__ == "__main__":
-    tc = TalkControl()
 
     # local testing
     #app.run(debug=True, host = '0.0.0.0', port = 5000)
