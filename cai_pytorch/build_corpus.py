@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import itertools
 import pandas as pd
 import urllib.request
 import tempfile
@@ -9,46 +12,53 @@ import codecs, unicodedata, os, csv, re
 class BuildCorpus():
     def __init__(self, pp):
         self.pp = pp
-        self.temp_dir = tempfile.mkdtemp()
-
-
-    def build_corpus_movies(self):
-        movie_lines, movie_conversations = self.get_data()
 
         # Define path to new file
         directory = 'static/local-data/cornell movie-dialogs corpus'
         if not os.path.exists(directory):
             os.makedirs(directory)
-        datafile = os.path.join(directory, 'formatted_movie_lines.txt')
-        delimiter = '\t'
-        # Unescape the delimiter
-        delimiter = str(codecs.decode(delimiter, "unicode_escape"))
+        self.pairs_datafile = os.path.join(directory, 'formatted_movie_lines.txt')
+
+
+    def build_corpus_movies(self):
+        movie_lines, movie_conversations = get_remote_data()
 
         # Initialize lines dict, conversations list, and field ids
         lines = {}
         conversations = []
-        MOVIE_LINES_FIELDS = ["lineID", "characterID", "movieID", "character", "text"]
-        MOVIE_CONVERSATIONS_FIELDS = ["character1ID", "character2ID", "movieID", "utteranceIDs"]
 
-        # Load lines and process conversations
-        print("\nProcessing corpus...")
-        lines = self.loadLines(movie_lines, MOVIE_LINES_FIELDS)
-        print("\nLoading conversations...")
-        conversations = self.loadConversations(movie_conversations, lines, MOVIE_CONVERSATIONS_FIELDS)
+        print("\nProcessing lines corpus...")
+        movie_lines = self.loadLines(movie_lines)
 
-        # Write new csv file
-        print("\nWriting newly formatted file...")
-        with open(datafile, 'w', encoding='utf-8') as outputfile:
-            writer = csv.writer(outputfile, delimiter=delimiter, lineterminator='\n')
-            for pair in self.extractSentencePairs(conversations):
-                writer.writerow(pair)
+        print("\nLoading conversations corpus...")
+        conversations = self.loadConversations(movie_conversations, movie_lines)
 
-        # Print a sample of lines
-        print("\nSample lines from file:")
-        self.printLines(datafile)
+        pairs = extractSentencePairs(conversations)
 
-        # Load/Assemble voc and pairs
-        voc, pairs = self.loadPrepareData(datafile)
+        # write(pairs, tofile=self.pairs_datafile)
+
+        # print("Start preparing training data ...")
+        pairs = self.normalizePairs(pairs)
+
+        print("Read {!s} sentence pairs".format(len(pairs)))
+        pairs = self.filterPairs(pairs)
+        print("Trimmed to {!s} sentence pairs".format(len(pairs)))
+
+        print("Voc: Counting words...")
+        # instantiate Voc object
+        voc = Voc(self.pp, "cornell movie-dialogs corpus")
+        for pair in pairs:
+            voc.addSentence(pair[0])
+            voc.addSentence(pair[1])
+        print("Counted words:", voc.num_words)
+
+
+        ################################
+        # Load/Assemble voc and pairs  #
+        ################################
+
+        # create Voc dict and pairs
+        # voc, pairs = self.loadPrepareData(self.pairs_datafile)
 
         # Print some pairs to validate
         print("\npairs:")
@@ -60,38 +70,9 @@ class BuildCorpus():
         return voc, pairs
 
 
-    def get_data(self,):
-        data_source = 'http://www.cs.cornell.edu/~cristian/data/cornell_movie_dialogs_corpus.zip'
-        zipname = self.temp_dir + '/temp.zip'
-        urllib.request.urlretrieve(data_source, zipname)
-
-        zip_ref = zipfile.ZipFile(zipname, 'r')
-        zip_ref.extractall(self.temp_dir)
-        print(zip_ref)
-        print(zip_ref.printdir())
-        zip_ref.close()
-
-        movie_lines = self.temp_dir + '/cornell movie-dialogs corpus/movie_lines.txt'
-        movie_conversations = self.temp_dir + '/cornell movie-dialogs corpus/movie_conversations.txt' # adapt file name
-        return movie_lines, movie_conversations
-
-
-    def printLines(self,file, n=10):
-        with open(file, 'rb') as datafile:
-            lines = datafile.readlines()
-        for line in lines[:n]:
-            print(line)
-
-    # printLines(os.path.join(corpus, "movie_lines.txt"))
-
-
-
-    ######################################################################
-    # Create formatted data file
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
     # Splits each line of the file into a dictionary of fields
-    def loadLines(self,fileName, fields):
+    def loadLines(self, fileName):
+        fields = ["lineID", "characterID", "movieID", "character", "text"]
         lines = {}
         with open(fileName, 'r', encoding='iso-8859-1') as f:
             for line in f:
@@ -101,83 +82,111 @@ class BuildCorpus():
                 for i, field in enumerate(fields):
                     lineObj[field] = values[i]
                 lines[lineObj['lineID']] = lineObj
+            # print(lines.keys()) keys == lineID's
+            print(lines['L1045'])
         return lines
 
 
     # Groups fields of lines from `loadLines` into conversations based on *movie_conversations.txt*
-    def loadConversations(self, fileName, lines, fields):
+    def loadConversations(self, file_movie_conversations, movie_lines):
+        fields = ["character1ID", "character2ID", "movieID", "utteranceIDs"]
         conversations = []
-        with open(fileName, 'r', encoding='iso-8859-1') as f:
+        with open(file_movie_conversations, 'r', encoding='iso-8859-1') as f:
             for line in f:
                 values = line.split(" +++$+++ ")
-                # Extract fields
+                # example: ['u1183', 'u1191', 'm78', "['L254006', 'L254007']\n"]
+
+                # Extract movie_conversations_fields
                 convObj = {}
                 for i, field in enumerate(fields):
                     convObj[field] = values[i]
+
                 # Convert string to list (convObj["utteranceIDs"] == "['L598485', 'L598486', ...]")
                 lineIds = eval(convObj["utteranceIDs"])
-                # Reassemble lines
-                convObj["lines"] = []
+
+                # Add lines from the movie_lines object to the convObj
+                convObj["movie_lines"] = []
                 for lineId in lineIds:
-                    convObj["lines"].append(lines[lineId])
+                    # example movie_lines[lineId]
+                    # {'lineID': 'L36930', 'text': 'Coffee?\n', 'character': 'BATEMAN', 'characterID': 'u327', 'movieID': 'm20'}
+
+                    ###### RB restrict to one movie ############
+                    if movie_lines[lineId]['movieID'] == 'm0':
+
+                        convObj["movie_lines"].append(movie_lines[lineId])
                 conversations.append(convObj)
         return conversations
 
 
-    # Extracts pairs of sentences from conversations
-    def extractSentencePairs(self, conversations):
-        qa_pairs = []
-        for conversation in conversations:
-            # Iterate over all the lines of the conversation
-            for i in range(len(conversation["lines"]) - 1):  # We ignore the last line (no answer for it)
-                inputLine = conversation["lines"][i]["text"].strip()
-                targetLine = conversation["lines"][i+1]["text"].strip()
-                # Filter wrong samples (if one of the lists is empty)
-                if inputLine and targetLine:
-                    qa_pairs.append([inputLine, targetLine])
-        return qa_pairs
+    # Using the functions defined above, return a populated voc object and pairs list
+    def loadPrepareData(self, datafile):
 
+        # print("Start preparing training data ...")
+        # pairs = self.normalizePairs(datafile)
 
+        # print("Read {!s} sentence pairs".format(len(pairs)))
+        # pairs = self.filterPairs(pairs)
+        # print("Trimmed to {!s} sentence pairs".format(len(pairs)))
 
-
-
-    # Read query/response pairs and return a voc object
-    def readVocs(self, datafile):
-        print("Read query/response pairs and return a voc object...")
-        # Read the file and split into lines
-        lines = open(datafile, encoding='utf-8').\
-            read().strip().split('\n')
-        # Split every line into pairs and normalize
-        pairs = [[normalizeString(s) for s in l.split('\t')] for l in lines]
+        print("Voc: Counting words...")
+        # instantiate Voc object
         voc = Voc(self.pp, "cornell movie-dialogs corpus")
+        for pair in pairs:
+            voc.addSentence(pair[0])
+            voc.addSentence(pair[1])
+        print("Counted words:", voc.num_words)
+        # print(voc.word2index)
         return voc, pairs
 
+
+    # Read query/response pairs
+    def normalizePairs(self, pairs):
+        print("Read query/response pairs...")
+        # Read the file and split into lines
+        # lines = open(datafile, encoding='utf-8').\
+        #     read().strip().split('\n')
+        # Split every line into pairs and normalize
+        pairs = [[normalizeString(s) for s in pair] for pair in pairs]
+        # print(pairs)
+        return pairs
 
     # Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
     def filterPair(self, p):
         # Input sequences need to preserve the last word for EOS token
         return len(p[0].split(' ')) < self.pp.MAX_LENGTH and len(p[1].split(' ')) < self.pp.MAX_LENGTH
 
-
     # Filter pairs using filterPair condition
     def filterPairs(self, pairs):
         return [pair for pair in pairs if self.filterPair(pair)]
 
 
-    # Using the functions defined above, return a populated voc object and pairs list
-    def loadPrepareData(self, datafile):
-        print("Start preparing training data ...")
-        voc, pairs = self.readVocs(datafile)
-        print("Read {!s} sentence pairs".format(len(pairs)))
-        pairs = self.filterPairs(pairs)
-        print("Trimmed to {!s} sentence pairs".format(len(pairs)))
-        print("Counting words...")
-        for pair in pairs:
-            voc.addSentence(pair[0])
-            voc.addSentence(pair[1])
-        print("Counted words:", voc.num_words)
-        return voc, pairs
+def get_remote_data():
+    # temp_dir = tempfile.mkdtemp()
+    # data_source = 'http://www.cs.cornell.edu/~cristian/data/cornell_movie_dialogs_corpus.zip'
+    # zipname = temp_dir + '/temp.zip'
+    # urllib.request.urlretrieve(data_source, zipname)
+    #
+    # zip_ref = zipfile.ZipFile(zipname, 'r')
+    # zip_ref.extractall(temp_dir)
+    # print(zip_ref)
+    # print(zip_ref.printdir())
+    # zip_ref.close()
 
+    # movie_lines = temp_dir + '/cornell movie-dialogs corpus/movie_lines.txt'
+    # movie_conversations = temp_dir + '/cornell movie-dialogs corpus/movie_conversations.txt' # adapt file name
+
+    movie_lines = 'static/local-data/cornell movie-dialogs corpus/movie_lines.txt'
+    movie_conversations = 'static/local-data/cornell movie-dialogs corpus/movie_conversations.txt'  # adapt file name
+
+
+    return movie_lines, movie_conversations
+
+
+def printLines(file, n=10):
+    with open(file, 'rb') as datafile:
+        lines = datafile.readlines()
+    for line in lines[:n]:
+        print(line)
 
 # Lowercase, trim, and remove non-letter characters
 def normalizeString(s):
@@ -225,17 +234,65 @@ def trimRareWords(voc, pairs, MIN_COUNT):
     return keep_pairs
 
 
+# Extracts pairs of sentences from conversations
+def extractSentencePairs(conversations):
+    qa_pairs = []
+    for conversation in conversations:
+        # print(conversation)
+        # Iterate over all the lines of the conversation
+        # RB
+        for i in range(0, len(conversation["movie_lines"]) - 1, 2):  # We ignore the last line (no answer for it)
+            inputLine = conversation["movie_lines"][i]["text"].strip()
+            targetLine = conversation["movie_lines"][i+1]["text"].strip()
+
+            # Filter wrong samples (if one of the lists is empty)
+            if inputLine and targetLine:
+                # print(inputLine)
+                # print(targetLine, '\n')
+                qa_pairs.append([inputLine, targetLine])
+
+    qa_pairs.sort()
+
+    # [print(pair) for pair in qa_pairs]
+    return qa_pairs
+
+    #RB dedupe
+    # qa_pairs_dpd = list(qa_pairs for qa_pairs, _ in itertools.groupby(qa_pairs))
+    # [print(pair) for pair in qa_pairs_dpd]
+    # return qa_pairs_dpd
+
+
+# Write new csv file
+def write(pairs, tofile):
+    delimiter = '\t'
+    # Unescape the delimiter
+    delimiter = str(codecs.decode(delimiter, "unicode_escape"))
+
+    print("\nWriting newly formatted file...")
+    with open(tofile, 'w', encoding='utf-8') as outputfile:
+        writer = csv.writer(outputfile, delimiter=delimiter, lineterminator='\n')
+        for pair in pairs:
+            writer.writerow(pair)
+
+    # Print a sample of lines
+    print("\nSample lines from newly formatted  file:")
+    printLines(tofile)
+
+
 class Voc():
     def __init__(self, pp, name=''):
-        self.pp = pp
+        self.project_params = pp
         self.name = name
         self.trimmed = False
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {self.pp.PAD_token: "PAD", self.pp.SOS_token: "SOS", self.pp.EOS_token: "EOS"}
+        self.index2word = {self.project_params.PAD_token: "PAD",
+                           self.project_params.SOS_token: "SOS",
+                           self.project_params.EOS_token: "EOS"}
         self.num_words = 3  # Count SOS, EOS, PAD
 
     def addSentence(self, sentence):
+        # print(sentence)
         for word in sentence.split(' '):
             self.addWord(word)
 
@@ -247,6 +304,8 @@ class Voc():
             self.num_words += 1
         else:
             self.word2count[word] += 1
+
+
 
     # Remove words below a certain count threshold
     def trim(self, min_count):
@@ -267,7 +326,9 @@ class Voc():
         # Reinitialize dictionaries
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {self.pp.PAD_token: "PAD", self.pp.SOS_token: "SOS", self.pp.EOS_token: "EOS"}
+        self.index2word = {self.project_params.PAD_token: "PAD",
+                           self.project_params.SOS_token: "SOS",
+                           self.project_params.EOS_token: "EOS"}
         self.num_words = 3 # Count default tokens
 
         for word in keep_words:
@@ -275,5 +336,4 @@ class Voc():
 
 
 if __name__ == "__main__":
-    pp = ProjectParams()
-    voc, pairs = BuildCorpus(pp).build_corpus_movies()
+    pass

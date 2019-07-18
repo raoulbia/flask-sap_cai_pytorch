@@ -24,7 +24,7 @@ def index():
 
 @app.route('/talk', methods=['POST'])
 def talk():
-    data = json.loads(request.get_data().decode())
+    data = json.loads(request.get_remote_data().decode())
     input = data['nlp']['source']
     # print(input)
     answer = Model(tc.pp).evaluateInputSapCai(input, tc.searcher, tc.voc)
@@ -46,7 +46,7 @@ def respond(answer):
 
 @app.route('/errors', methods=['POST'])
 def errors():
-  print(json.loads(request.get_data().decode()))
+  print(json.loads(request.get_remote_data().decode()))
   return jsonify(status=200)
 
 
@@ -57,4 +57,4 @@ if __name__ == "__main__":
 
     # for Heroku deployment
     port = int(os.environ['PORT'])
-    app.run(port=port, host="0.0.0.0")
+    app.run(debug=True, port=port, host="0.0.0.0")

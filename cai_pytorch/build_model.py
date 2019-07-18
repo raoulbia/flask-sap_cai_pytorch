@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
 from torch import optim
-from .build_corpus import *
+# from .build_corpus import *
 from .models import *
 from .build_corpus import normalizeString
 import torch.nn as nn

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import torch
 from .build_corpus import BuildCorpus
 from .build_model import Model
@@ -27,7 +29,7 @@ class ProjectParams():
         self.teacher_forcing_ratio = 1.0
         self.learning_rate = 0.0001
         self.decoder_learning_ratio = 5.0
-        self.n_iteration = 1  # 4000
+        self.n_iteration = 4000
         self.print_every = 1
         self.save_every = 1  # 500
 
@@ -58,18 +60,18 @@ if __name__ == "__main__":
     pp = ProjectParams()
 
     # build model
-    # voc, pairs = BuildCorpus(pp).build_corpus_movies()
-    # encoder, decoder = Model(pp).train_model(voc, pairs)
+    voc, pairs = BuildCorpus(pp).build_corpus_movies()
+    encoder, decoder = Model(pp).train_model(voc, pairs)
 
 
     # load pre-trained model
-    encoder, decoder, voc = LoadModel(pp).load_model()
+    # encoder, decoder, voc = LoadModel(project_params).load_model()
 
 
     # Initialize search module
-    searcher = GreedySearchDecoder(encoder, decoder, pp)
+    # searcher = GreedySearchDecoder(encoder, decoder, project_params)
     # Begin chatting (uncomment and run the following line to begin)
-    Model(pp).evaluateInput(searcher, voc)
+    # Model(project_params).evaluateInput(searcher, voc)
 
 
 

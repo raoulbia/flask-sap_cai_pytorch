@@ -1,13 +1,10 @@
+#!/usr/bin/env python3
 import torch
 import torch.nn as nn
 # import torch.utils.model_zoo
 from .models import EncoderRNN, LuongAttnDecoderRNN
 from .build_corpus import Voc
 
-
-
-import urllib.request
-import tarfile
 
 class LoadModel():
     def __init__(self, pp):
