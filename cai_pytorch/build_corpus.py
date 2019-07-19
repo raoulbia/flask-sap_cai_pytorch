@@ -161,22 +161,22 @@ class BuildCorpus():
 
 
 def get_remote_data():
-    # temp_dir = tempfile.mkdtemp()
-    # data_source = 'http://www.cs.cornell.edu/~cristian/data/cornell_movie_dialogs_corpus.zip'
-    # zipname = temp_dir + '/temp.zip'
-    # urllib.request.urlretrieve(data_source, zipname)
-    #
-    # zip_ref = zipfile.ZipFile(zipname, 'r')
-    # zip_ref.extractall(temp_dir)
-    # print(zip_ref)
-    # print(zip_ref.printdir())
-    # zip_ref.close()
+    temp_dir = tempfile.mkdtemp()
+    data_source = 'http://www.cs.cornell.edu/~cristian/data/cornell_movie_dialogs_corpus.zip'
+    zipname = temp_dir + '/temp.zip'
+    urllib.request.urlretrieve(data_source, zipname)
 
-    # movie_lines = temp_dir + '/cornell movie-dialogs corpus/movie_lines.txt'
-    # movie_conversations = temp_dir + '/cornell movie-dialogs corpus/movie_conversations.txt' # adapt file name
+    zip_ref = zipfile.ZipFile(zipname, 'r')
+    zip_ref.extractall(temp_dir)
+    print(zip_ref)
+    print(zip_ref.printdir())
+    zip_ref.close()
 
-    movie_lines = 'static/local-data/cornell movie-dialogs corpus/movie_lines.txt'
-    movie_conversations = 'static/local-data/cornell movie-dialogs corpus/movie_conversations.txt'  # adapt file name
+    movie_lines = temp_dir + '/cornell movie-dialogs corpus/movie_lines.txt'
+    movie_conversations = temp_dir + '/cornell movie-dialogs corpus/movie_conversations.txt' # adapt file name
+
+    # movie_lines = 'static/local-data/cornell movie-dialogs corpus/movie_lines.txt'
+    # movie_conversations = 'static/local-data/cornell movie-dialogs corpus/movie_conversations.txt'  # adapt file name
 
 
     return movie_lines, movie_conversations

@@ -177,11 +177,17 @@ class Model():
 
             # Save checkpoint
             if (iteration % self.pp.save_every == 0):
-                directory = os.path.join('static/local-data/', self.pp.corpus_name, self.pp.model_name,
-                                         '{}-{}_{}'.format(self.pp.encoder_n_layers,
-                                                           self.pp.decoder_n_layers,
+                save_dir = os.path.join("data", "save")
+                directory = os.path.join(save_dir, self.pp.model_name, self.pp.corpus_name,
+                                         '{}-{}_{}'.format(self.pp.encoder_n_layers, self.pp.decoder_n_layers,
                                                            self.pp.hidden_size))
+
+                # directory = os.path.join('static/local-data/', self.pp.corpus_name, self.pp.model_name,
+                #                          '{}-{}_{}'.format(self.pp.encoder_n_layers,
+                #                                            self.pp.decoder_n_layers,
+                #                                            self.pp.hidden_size))
                 print(directory)
+
                 if not os.path.exists(directory):
                     os.makedirs(directory)
                 torch.save({
@@ -292,6 +298,7 @@ class Model():
 
             except KeyError:
                 print("Error: Encountered unknown word.")
+
 
     def evaluateInputSapCai(self, input, searcher, voc):
         input_sentence = input
