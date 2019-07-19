@@ -69,9 +69,9 @@ if __name__ == "__main__":
 
 
     # Initialize search module
-    # searcher = GreedySearchDecoder(encoder, decoder, project_params)
-    # Begin chatting (uncomment and run the following line to begin)
-    # Model(project_params).evaluateInput(searcher, voc)
+    searcher = GreedySearchDecoder(encoder, decoder, project_params)
+    Begin chatting (uncomment and run the following line to begin)
+    Model(project_params).evaluateInput(searcher, voc)
 
 
 
