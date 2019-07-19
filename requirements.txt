@@ -3,3 +3,4 @@ gunicorn
 pandas
 torch
 requests
+pytest
