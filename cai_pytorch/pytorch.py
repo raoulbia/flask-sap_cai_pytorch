@@ -30,7 +30,7 @@ class ProjectParams():
         self.learning_rate = 0.0001
         self.decoder_learning_ratio = 5.0
         self.n_iteration = 4000
-        self.print_every = 1
+        self.print_every = 500
         self.save_every = 1  # 500
 
         self.attn_model = 'dot'
