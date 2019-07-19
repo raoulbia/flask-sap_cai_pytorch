@@ -19,7 +19,7 @@ class Model():
     
     def __init__(self, pp):
 
-        self.pp = pp
+        self.project_params = pp
         
 
     def train_model(self, voc, pairs):
@@ -30,23 +30,23 @@ class Model():
         print('Building encoder and decoder ...')
         
         # Initialize word embeddings
-        self.embedding = nn.Embedding(self.voc.num_words, self.pp.hidden_size)
+        self.embedding = nn.Embedding(self.voc.num_words, self.project_params.hidden_size)
     
         # Initialize encoder & decoder models
-        self.encoder = EncoderRNN(self.pp.hidden_size,
-                                  self.embedding, 
-                                  self.pp.encoder_n_layers,
-                                  self.pp.dropout)
-        self.decoder = LuongAttnDecoderRNN(self.pp.attn_model,
-                                           self.embedding, 
-                                           self.pp.hidden_size,
-                                           self.voc.num_words, 
-                                           self.pp.decoder_n_layers,
-                                           self.pp.dropout)
+        self.encoder = EncoderRNN(self.project_params.hidden_size,
+                                  self.embedding,
+                                  self.project_params.encoder_n_layers,
+                                  self.project_params.dropout)
+        self.decoder = LuongAttnDecoderRNN(self.project_params.attn_model,
+                                           self.embedding,
+                                           self.project_params.hidden_size,
+                                           self.voc.num_words,
+                                           self.project_params.decoder_n_layers,
+                                           self.project_params.dropout)
     
         # Use appropriate device
-        self.encoder = self.encoder.to(self.pp.device)
-        self.decoder = self.decoder.to(self.pp.device)
+        self.encoder = self.encoder.to(self.project_params.device)
+        self.decoder = self.decoder.to(self.project_params.device)
         print('Encoder/Decoder Models built and ready to go!')
         
         # Ensure dropout layers are in train mode
@@ -55,9 +55,9 @@ class Model():
     
         # Initialize optimizers
         print('Building optimizers ...')
-        self.encoder_optimizer = optim.Adam(self.encoder.parameters(), lr=self.pp.learning_rate)
-        self.decoder_optimizer = optim.Adam(self.decoder.parameters(), 
-                                       lr=self.pp.learning_rate * self.pp.decoder_learning_ratio)
+        self.encoder_optimizer = optim.Adam(self.encoder.parameters(), lr=self.project_params.learning_rate)
+        self.decoder_optimizer = optim.Adam(self.decoder.parameters(),
+                                            lr=self.project_params.learning_rate * self.project_params.decoder_learning_ratio)
     
         # TODO what is this for?
         # if loadFilename:
@@ -77,10 +77,10 @@ class Model():
         self.decoder_optimizer.zero_grad()
 
         # Set device options
-        input_variable = input_variable.to(self.pp.device)
-        lengths = lengths.to(self.pp.device)
-        target_variable = target_variable.to(self.pp.device)
-        mask = mask.to(self.pp.device)
+        input_variable = input_variable.to(self.project_params.device)
+        lengths = lengths.to(self.project_params.device)
+        target_variable = target_variable.to(self.project_params.device)
+        mask = mask.to(self.project_params.device)
 
         # Initialize variables
         loss = 0
@@ -91,14 +91,14 @@ class Model():
         encoder_outputs, encoder_hidden = self.encoder(input_variable, lengths)
 
         # Create initial decoder input (start with SOS tokens for each sentence)
-        decoder_input = torch.LongTensor([[self.pp.SOS_token for _ in range(self.pp.batch_size)]])
-        decoder_input = decoder_input.to(self.pp.device)
+        decoder_input = torch.LongTensor([[self.project_params.SOS_token for _ in range(self.project_params.batch_size)]])
+        decoder_input = decoder_input.to(self.project_params.device)
 
         # Set initial decoder hidden state to the encoder's final hidden state
         decoder_hidden = encoder_hidden[:self.decoder.n_layers]
 
         # Determine if we are using teacher forcing this iteration
-        use_teacher_forcing = True if random.random() < self.pp.teacher_forcing_ratio else False
+        use_teacher_forcing = True if random.random() < self.project_params.teacher_forcing_ratio else False
 
         # Forward batch of sequences through decoder one time step at a time
         if use_teacher_forcing:
@@ -120,8 +120,8 @@ class Model():
                 )
                 # No teacher forcing: next input is decoder's own current output
                 _, topi = decoder_output.topk(1)
-                decoder_input = torch.LongTensor([[topi[i][0] for i in range(self.pp.batch_size)]])
-                decoder_input = decoder_input.to(self.pp.device)
+                decoder_input = torch.LongTensor([[topi[i][0] for i in range(self.project_params.batch_size)]])
+                decoder_input = decoder_input.to(self.project_params.device)
                 # Calculate and accumulate loss
                 mask_loss, nTotal = self.maskNLLLoss(decoder_output, target_variable[t], mask[t])
                 loss += mask_loss
@@ -132,8 +132,8 @@ class Model():
         loss.backward()
 
         # Clip gradients: gradients are modified in place
-        _ = nn.utils.clip_grad_norm_(self.encoder.parameters(), self.pp.clip)
-        _ = nn.utils.clip_grad_norm_(self.decoder.parameters(), self.pp.clip)
+        _ = nn.utils.clip_grad_norm_(self.encoder.parameters(), self.project_params.clip)
+        _ = nn.utils.clip_grad_norm_(self.decoder.parameters(), self.project_params.clip)
 
         # Adjust model weights
         self.encoder_optimizer.step()
@@ -145,8 +145,8 @@ class Model():
     def trainIters(self):
 
         # Load batches for each iteration
-        training_batches = [self.batch2TrainData([random.choice(self.pairs) for _ in range(self.pp.batch_size)])
-                          for _ in range(self.pp.n_iteration)]
+        training_batches = [self.batch2TrainData([random.choice(self.pairs) for _ in range(self.project_params.batch_size)])
+                            for _ in range(self.project_params.n_iteration)]
 
         # Initializations
         print('Initializing ...')
@@ -159,7 +159,7 @@ class Model():
 
         # Training loop
         print("Training...")
-        for iteration in range(start_iteration, self.pp.n_iteration + 1):
+        for iteration in range(start_iteration, self.project_params.n_iteration + 1):
             training_batch = training_batches[iteration - 1]
             # Extract fields from batch
             input_variable, lengths, target_variable, mask, max_target_len = training_batch
@@ -169,23 +169,23 @@ class Model():
             print_loss += loss
 
             # Print progress
-            if iteration % self.pp.print_every == 0:
-                print_loss_avg = print_loss / self.pp.print_every
+            if iteration % self.project_params.print_every == 0:
+                print_loss_avg = print_loss / self.project_params.print_every
                 print("Iteration: {}; Percent complete: {:.1f}%; "
-                      "Average loss: {:.4f}".format(iteration, iteration / self.pp.n_iteration * 100, print_loss_avg))
+                      "Average loss: {:.4f}".format(iteration, iteration / self.project_params.n_iteration * 100, print_loss_avg))
                 print_loss = 0
 
             # Save checkpoint
-            if (iteration % self.pp.save_every == 0):
+            if (iteration % self.project_params.save_every == 0):
                 save_dir = os.path.join("data", "save")
-                directory = os.path.join(save_dir, self.pp.model_name, self.pp.corpus_name,
-                                         '{}-{}_{}'.format(self.pp.encoder_n_layers, self.pp.decoder_n_layers,
-                                                           self.pp.hidden_size))
+                directory = os.path.join(save_dir, self.project_params.model_name, self.project_params.corpus_name,
+                                         '{}-{}_{}'.format(self.project_params.encoder_n_layers, self.project_params.decoder_n_layers,
+                                                           self.project_params.hidden_size))
 
-                # directory = os.path.join('static/local-data/', self.pp.corpus_name, self.pp.model_name,
-                #                          '{}-{}_{}'.format(self.pp.encoder_n_layers,
-                #                                            self.pp.decoder_n_layers,
-                #                                            self.pp.hidden_size))
+                # directory = os.path.join('static/local-data/', self.project_params.corpus_name, self.project_params.model_name,
+                #                          '{}-{}_{}'.format(self.project_params.encoder_n_layers,
+                #                                            self.project_params.decoder_n_layers,
+                #                                            self.project_params.hidden_size))
                 print(directory)
 
                 if not os.path.exists(directory):
@@ -203,7 +203,7 @@ class Model():
 
 
     def zeroPadding(self, l):
-        return list(itertools.zip_longest(*l, fillvalue=self.pp.PAD_token))
+        return list(itertools.zip_longest(*l, fillvalue=self.project_params.PAD_token))
 
 
     def binaryMatrix(self, l):
@@ -211,7 +211,7 @@ class Model():
         for i, seq in enumerate(l):
             m.append([])
             for token in seq:
-                if token == self.pp.PAD_token:
+                if token == self.project_params.PAD_token:
                     m[i].append(0)
                 else:
                     m[i].append(1)
@@ -220,7 +220,7 @@ class Model():
 
     # Returns padded input sequence tensor and lengths
     def inputVar(self, l):
-        indexes_batch = [indexesFromSentence(sentence, self.voc, self.pp.EOS_token) for sentence in l]
+        indexes_batch = [indexesFromSentence(sentence, self.voc, self.project_params.EOS_token) for sentence in l]
         lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
         padList = self.zeroPadding(indexes_batch)
         padVar = torch.LongTensor(padList)
@@ -229,7 +229,7 @@ class Model():
 
     # Returns padded target sequence tensor, padding mask, and max target length
     def outputVar(self, l):
-        indexes_batch = [indexesFromSentence(sentence, self.voc, self.pp.EOS_token) for sentence in l]
+        indexes_batch = [indexesFromSentence(sentence, self.voc, self.project_params.EOS_token) for sentence in l]
         max_target_len = max([len(indexes) for indexes in indexes_batch])
         padList = self.zeroPadding(indexes_batch)
         mask = self.binaryMatrix(padList)
@@ -255,24 +255,24 @@ class Model():
         nTotal = mask.sum()
         crossEntropy = -torch.log(torch.gather(inp, 1, target.view(-1, 1)).squeeze(1))
         loss = crossEntropy.masked_select(mask).mean()
-        loss = loss.to(self.pp.device)
+        loss = loss.to(self.project_params.device)
         return loss, nTotal.item()
 
 
     def evaluate(self, searcher, voc, sentence):
         ### Format input sentence as a batch
         # words -> indexes
-        indexes_batch = [indexesFromSentence(sentence, voc, self.pp.EOS_token)]
+        indexes_batch = [indexesFromSentence(sentence, voc, self.project_params.EOS_token)]
         # Create lengths tensor
         lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
         # Transpose dimensions of batch to match models' expectations
         input_batch = torch.LongTensor(indexes_batch).transpose(0, 1)
         # Use appropriate device
-        input_batch = input_batch.to(self.pp.device)
-        lengths = lengths.to(self.pp.device)
+        input_batch = input_batch.to(self.project_params.device)
+        lengths = lengths.to(self.project_params.device)
 
         # Decode sentence with searcher
-        tokens, scores = searcher.forward(input_batch, lengths, self.pp.MAX_LENGTH)
+        tokens, scores = searcher.forward(input_batch, lengths, self.project_params.MAX_LENGTH)
 
         # indexes -> words
         decoded_words = [voc.index2word[token.item()] for token in tokens]

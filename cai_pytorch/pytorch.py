@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import torch
-from .build_corpus import BuildCorpus
+from .build_corpus import BuildCorpus, Voc
 from .build_model import Model
 from .search import GreedySearchDecoder
+from .make_dataset import squad
 from .utils_load_model import LoadModel
 
 class ProjectParams():
@@ -49,6 +50,7 @@ class ProjectParams():
         self.PAD_token = 0  # Used for padding short sentences
         self.SOS_token = 1  # Start-of-sentence token
         self.EOS_token = 2  # End-of-sentence token
+
         self.MAX_LENGTH = 10  # Maximum sentence length to consider
         self.MIN_COUNT = 3  # Minimum word count threshold for trimming
 
@@ -57,16 +59,26 @@ class ProjectParams():
 
 
 if __name__ == "__main__":
-    pp = ProjectParams()
-
-    # build model
-    voc, pairs = BuildCorpus(pp).build_corpus_movies()
-    encoder, decoder = Model(pp).train_model(voc, pairs)
-
 
     # load pre-trained model
     # encoder, decoder, voc = LoadModel(project_params).load_model()
 
+    # train model
+    pp = ProjectParams()
+
+    # build Cornell
+    # voc, pairs = BuildCorpus(pp).build_corpus_movies()
+
+    # build SQuAD
+    pairs = squad()
+    voc = Voc(pp)
+    for pair in pairs:
+        voc.addSentence(pair[0])
+        voc.addSentence(pair[1])
+    print(voc.num_words)
+
+    # build mdel
+    encoder, decoder = Model(pp).train_model(voc, pairs)
 
     # Initialize search module
     searcher = GreedySearchDecoder(encoder, decoder, pp)
