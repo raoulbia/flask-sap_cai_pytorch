@@ -38,10 +38,10 @@ class BuildCorpus():
         # write(pairs, tofile=self.pairs_datafile)
 
         # print("Start preparing training data ...")
-        pairs = self.normalizePairs(pairs)
+        pairs = normalizePairs(pairs)
 
         print("Read {!s} sentence pairs".format(len(pairs)))
-        pairs = self.filterPairs(pairs)
+        pairs = filterPairs(pairs, self.pp.MAX_LENGTH)
         print("Trimmed to {!s} sentence pairs".format(len(pairs)))
 
         print("Voc: Counting words...")
@@ -118,46 +118,17 @@ class BuildCorpus():
         return conversations
 
 
-    # Using the functions defined above, return a populated voc object and pairs list
-    def loadPrepareData(self, datafile):
+# Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
+# def filterPair(self, p):
+#     # Input sequences need to preserve the last word for EOS token
+#     return len(p[0].split(' ')) < self.pp.MAX_LENGTH and len(p[1].split(' ')) < self.pp.MAX_LENGTH
 
-        # print("Start preparing training data ...")
-        # pairs = self.normalizePairs(datafile)
+# Filter pairs using filterPair condition
+def filterPairs(pairs, max_len):
+    # return [pair for pair in pairs if self.filterPair(pair)]
 
-        # print("Read {!s} sentence pairs".format(len(pairs)))
-        # pairs = self.filterPairs(pairs)
-        # print("Trimmed to {!s} sentence pairs".format(len(pairs)))
-
-        print("Voc: Counting words...")
-        # instantiate Voc object
-        voc = Voc(self.pp, "cornell movie-dialogs corpus")
-        for pair in pairs:
-            voc.addSentence(pair[0])
-            voc.addSentence(pair[1])
-        print("Counted words:", voc.num_words)
-        # print(voc.word2index)
-        return voc, pairs
-
-
-    # Read query/response pairs
-    def normalizePairs(self, pairs):
-        print("Read query/response pairs...")
-        # Read the file and split into lines
-        # lines = open(datafile, encoding='utf-8').\
-        #     read().strip().split('\n')
-        # Split every line into pairs and normalize
-        pairs = [[normalizeString(s) for s in pair] for pair in pairs]
-        # print(pairs)
-        return pairs
-
-    # Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
-    def filterPair(self, p):
-        # Input sequences need to preserve the last word for EOS token
-        return len(p[0].split(' ')) < self.pp.MAX_LENGTH and len(p[1].split(' ')) < self.pp.MAX_LENGTH
-
-    # Filter pairs using filterPair condition
-    def filterPairs(self, pairs):
-        return [pair for pair in pairs if self.filterPair(pair)]
+    return ([p for p in pairs if len(p[0].split(' ')) < max_len
+                                and len(p[1].split(' ')) < max_len])
 
 
 def get_remote_data():
@@ -187,6 +158,15 @@ def printLines(file, n=10):
         lines = datafile.readlines()
     for line in lines[:n]:
         print(line)
+
+
+
+def normalizePairs(pairs):
+    print("Read query/response pairs...")
+    # Split every line into pairs and normalize
+    pairs = [[normalizeString(s) for s in pair] for pair in pairs]
+    # print(pairs)
+    return pairs
 
 # Lowercase, trim, and remove non-letter characters
 def normalizeString(s):

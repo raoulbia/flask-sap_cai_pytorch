@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import torch
-from .build_corpus import BuildCorpus, Voc
+from .build_corpus import BuildCorpus, Voc, normalizePairs, filterPairs, trimRareWords
 from .build_model import Model
 from .search import GreedySearchDecoder
 from .make_dataset import squad
@@ -71,11 +71,21 @@ if __name__ == "__main__":
 
     # build SQuAD
     pairs = squad()
+    print(pairs[10])
+    pairs = normalizePairs(pairs)
+    pairs = filterPairs(pairs, pp.MAX_LENGTH)
+    print(pairs[10])
+
     voc = Voc(pp)
     for pair in pairs:
         voc.addSentence(pair[0])
         voc.addSentence(pair[1])
     print(voc.num_words)
+
+    pairs = trimRareWords(voc, pairs, pp.MIN_COUNT)
+    print(voc.num_words)
+    print(pairs[10])
+
 
     # build mdel
     encoder, decoder = Model(pp).train_model(voc, pairs)
@@ -84,7 +94,3 @@ if __name__ == "__main__":
     searcher = GreedySearchDecoder(encoder, decoder, pp)
     # Begin chatting
     Model(pp).evaluateInput(searcher, voc)
-
-
-
-
