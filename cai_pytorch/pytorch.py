@@ -71,9 +71,9 @@ if __name__ == "__main__":
 
     # build SQuAD
     pairs = squad()
-    print(pairs[10])
+    print(pairs)
     pairs = normalizePairs(pairs)
-    pairs = filterPairs(pairs, pp.MAX_LENGTH)
+    # pairs = filterPairs(pairs, pp.MAX_LENGTH)
     print(pairs[10])
 
     voc = Voc(pp)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     pairs = trimRareWords(voc, pairs, pp.MIN_COUNT)
     print(voc.num_words)
-    print(pairs[10])
+    print(pairs)
 
 
     # build mdel

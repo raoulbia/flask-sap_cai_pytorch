@@ -22,7 +22,7 @@ def squad():
     # print(len(df))
     # pprint(df.context.iloc[0])
     # print(df.tail())
-    pairs = list(zip(df['question'].tolist(), df['text'].tolist()))
+    pairs = list(zip(df['question'].tolist(), df['context'].tolist()))
     # print(pairs)
     return pairs
 
