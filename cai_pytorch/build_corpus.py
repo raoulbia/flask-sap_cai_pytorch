@@ -168,8 +168,8 @@ def get_remote_data():
 
     zip_ref = zipfile.ZipFile(zipname, 'r')
     zip_ref.extractall(temp_dir)
-    print(zip_ref)
-    print(zip_ref.printdir())
+    # print(zip_ref)
+    # print(zip_ref.printdir())
     zip_ref.close()
 
     movie_lines = temp_dir + '/cornell movie-dialogs corpus/movie_lines.txt'
